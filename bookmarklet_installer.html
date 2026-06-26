@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bookmarklet Telepítő & Generátor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0b14;
+            --card-bg: rgba(22, 22, 38, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --primary: #00e5ff;
+            --primary-glow: rgba(0, 229, 255, 0.4);
+            --secondary: #ff007f;
+            --secondary-glow: rgba(255, 0, 127, 0.4);
+            --text-main: #f3f3f6;
+            --text-muted: #9fa0b5;
+            --accent: #7928ca;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(121, 40, 202, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(0, 229, 255, 0.15) 0%, transparent 40%);
+            color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 1100px;
+            width: 100%;
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 3rem;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 2.5rem;
+            position: relative;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border-radius: 24px 24px 0 0;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff 30%, #a5a6c5 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.03em;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            font-size: 1.15rem;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 3rem;
+        }
+
+        @media (max-width: 868px) {
+            .grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+            .container {
+                padding: 1.5rem;
+            }
+            h1 {
+                font-size: 2.2rem;
+            }
+        }
+
+        .section-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 1.2rem;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-title span.badge {
+            background: rgba(0, 229, 255, 0.1);
+            color: var(--primary);
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        /* Editor Column */
+        .editor-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+        }
+
+        .presets-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+        }
+
+        .preset-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            color: var(--text-main);
+            padding: 0.75rem 1rem;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .preset-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .preset-btn.active {
+            background: linear-gradient(135deg, rgba(0, 229, 255, 0.15), rgba(121, 40, 202, 0.15));
+            border-color: var(--primary);
+            color: #fff;
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.1);
+        }
+
+        .code-area-wrapper {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--card-border);
+            background: #06060c;
+        }
+
+        textarea {
+            width: 100%;
+            height: 280px;
+            background: transparent;
+            border: none;
+            color: #bbf7ff;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            padding: 1.2rem;
+            resize: vertical;
+            outline: none;
+            line-height: 1.5;
+        }
+
+        .editor-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Installer/Drag Column */
+        .installer-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 2rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 20px;
+            padding: 2rem;
+        }
+
+        .drag-zone {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            padding: 2rem 1rem;
+            border: 2px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            background: rgba(0, 0, 0, 0.2);
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .drag-zone:hover {
+            border-color: rgba(0, 229, 255, 0.4);
+            background: rgba(0, 229, 255, 0.02);
+        }
+
+        /* The Bookmarklet Button itself */
+        .bookmarklet-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            padding: 1rem 2.2rem;
+            background: linear-gradient(135deg, var(--primary) 0%, #00b4d8 50%, var(--accent) 100%);
+            background-size: 200% auto;
+            border: none;
+            border-radius: 50px;
+            color: #0b0b14;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: grab;
+            box-shadow: 0 10px 30px var(--primary-glow);
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.2);
+            position: relative;
+        }
+
+        .bookmarklet-btn:active {
+            cursor: grabbing;
+        }
+
+        .bookmarklet-btn:hover {
+            background-position: right center;
+            transform: translateY(-4px) scale(1.03);
+            box-shadow: 0 15px 40px var(--primary-glow), 0 0 20px rgba(121, 40, 202, 0.4);
+        }
+
+        .bookmarklet-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+            transition: transform 0.3s ease;
+        }
+
+        .bookmarklet-btn:hover svg {
+            transform: translate(2px, -2px);
+        }
+
+        .help-box {
+            background: rgba(255, 255, 255, 0.02);
+            border-left: 3px solid var(--secondary);
+            border-radius: 4px 12px 12px 4px;
+            padding: 1.2rem;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .help-box h3 {
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .steps-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .steps-list li {
+            position: relative;
+            padding-left: 1.8rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .steps-list li::before {
+            content: attr(data-step);
+            position: absolute;
+            left: 0;
+            top: 1px;
+            width: 18px;
+            height: 18px;
+            background: rgba(255, 0, 127, 0.15);
+            color: var(--secondary);
+            border: 1px solid rgba(255, 0, 127, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .steps-list li strong {
+            color: #fff;
+        }
+
+        footer.site-footer {
+            margin-top: 3rem;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        footer.site-footer a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        footer.site-footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Drag instructions animation visualization */
+        .drag-animation {
+            width: 100%;
+            height: 80px;
+            position: relative;
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            padding: 0 1rem;
+            border: 1px solid rgba(255,255,255,0.03);
+        }
+
+        .anim-element {
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 6px;
+        }
+
+        .anim-btn {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: #0b0b14;
+            box-shadow: 0 0 10px var(--primary-glow);
+            z-index: 2;
+        }
+
+        .anim-bar {
+            background: rgba(255,255,255,0.05);
+            border: 1px dashed rgba(255,255,255,0.2);
+            color: var(--text-muted);
+            width: 160px;
+            text-align: center;
+            position: relative;
+        }
+
+        .anim-hand {
+            position: absolute;
+            font-size: 1.5rem;
+            z-index: 3;
+            pointer-events: none;
+            animation: dragHand 3s infinite ease-in-out;
+        }
+
+        @keyframes dragHand {
+            0% {
+                transform: translate(-90px, 10px);
+                opacity: 0;
+            }
+            15% {
+                transform: translate(-90px, 10px);
+                opacity: 1;
+            }
+            50% {
+                transform: translate(60px, -15px);
+                opacity: 1;
+            }
+            75% {
+                transform: translate(60px, -15px);
+                opacity: 0;
+            }
+            100% {
+                transform: translate(-90px, 10px);
+                opacity: 0;
+            }
+        }
+
+        .toast-local {
+            position: fixed;
+            bottom: 30px;
+            background: #1e1e2d;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 100;
+        }
+
+        .toast-local.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Bookmarklet Generátor</h1>
+            <p class="subtitle">Alakíts át bármilyen JavaScript kódot egyetlen kattintással böngészőben futtatható könyvjelzővé (Bookmarklet). Húzd ki a gombot a könyvjelzősávodra!</p>
+        </header>
+
+        <div class="grid">
+            <!-- Bal oldal: Kód és előbeállítások -->
+            <div class="editor-container">
+                <h2 class="section-title">JavaScript Kód <span class="badge">Szerkesztő</span></h2>
+                
+                <div class="presets-grid">
+                    <button class="preset-btn active" onclick="loadPreset('edit')">
+                        📝 Weboldal Szerkesztő
+                    </button>
+                    <button class="preset-btn" onclick="loadPreset('dark')">
+                        🌙 Sötét Mód Váltó
+                    </button>
+                    <button class="preset-btn" onclick="loadPreset('passwords')">
+                        🔑 Jelszó Felfedő
+                    </button>
+                    <button class="preset-btn" onclick="loadPreset('outline')">
+                        📐 Elrendezés Vizsgáló
+                    </button>
+                </div>
+
+                <div class="code-area-wrapper">
+                    <textarea id="codeEditor" spellcheck="false" placeholder="// Írd vagy másold be a JavaScript kódodat ide..."></textarea>
+                </div>
+
+                <div class="editor-footer">
+                    <span id="charCount">Karakterek száma: 0</span>
+                    <span>Automatikus fordítás</span>
+                </div>
+            </div>
+
+            <!-- Jobb oldal: Telepítő gomb -->
+            <div class="installer-container">
+                <div>
+                    <h2 class="section-title">Telepítés <span class="badge" style="background:rgba(255,0,127,0.1);color:var(--secondary);border-color:rgba(255,0,127,0.2)">Húzd és ejtsd</span></h2>
+                    
+                    <div class="drag-zone">
+                        <a href="#" id="bookmarkletLink" class="bookmarklet-btn" title="Húzd a könyvjelzősávra" draggable="true">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                            </svg>
+                            <span id="btnLabel">Szerkesztő Mód</span>
+                        </a>
+                        <p style="font-size: 0.9rem; color: var(--text-muted); max-width: 250px; line-height: 1.4;">
+                            Kattints rá a teszteléshez, vagy <strong>húzd ki</strong> a fenti gombot közvetlenül a böngésződ könyvjelzősávjára (Ctrl+Shift+B a sáv megjelenítéséhez).
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Animációs illusztráció -->
+                <div class="drag-animation">
+                    <span class="anim-hand">👆</span>
+                    <div class="anim-element anim-btn">Szerkesztő Mód</div>
+                    <div style="color: var(--text-muted); font-size: 1.2rem;">➔</div>
+                    <div class="anim-element anim-bar">Könyvjelzősáv</div>
+                </div>
+
+                <!-- Súgó -->
+                <div class="help-box">
+                    <h3>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--secondary)">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                            <line x1="12" y1="12" x2="12.01" y2="12"></line>
+                        </svg>
+                        Hogyan működik?
+                    </h3>
+                    <ul class="steps-list">
+                        <li data-step="1">Bizonyosodj meg róla, hogy a böngésződ <strong>könyvjelzősávja (Bookmarks Bar)</strong> látható.</li>
+                        <li data-step="2"><strong>Húzd a színes gombot</strong> a könyvjelzősávod egy üres helyére.</li>
+                        <li data-step="3">Nyiss meg egy tetszőleges weboldalt (pl. híroldalt), majd <strong>kattints a könyvjelzőre</strong> a kód futtatásához!</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <footer class="site-footer">
+            <p>Készült az Antigravity AI asszisztenssel • A forráskódot megtalálod a <a href="./bookmarklet.js">bookmarklet.js</a> fájlban.</p>
+        </footer>
+    </div>
+
+    <div id="localToast" class="toast-local">Toast üzenet</div>
+
+    <script>
+        // Presets adatok
+        const presets = {
+            edit: `(function() {
+  if (document.body.contentEditable === 'true') {
+    document.body.contentEditable = 'false';
+    document.designMode = 'off';
+    showToast('Szerkesztő Mód: KIKAPCSOLVA');
+  } else {
+    document.body.contentEditable = 'true';
+    document.designMode = 'on';
+    showToast('Szerkesztő Mód: BEKAPCSOLVA - Kattints bármelyik szövegre a szerkesztéshez!');
+  }
+
+  function showToast(msg) {
+    var t = document.getElementById('bml-toast');
+    if (!t) {
+      t = document.createElement('div');
+      t.id = 'bml-toast';
+      t.style.cssText = 'position:fixed;top:20px;right:20px;background:rgba(30,30,40,0.95);color:#00e5ff;padding:12px 24px;border-radius:8px;font-family:sans-serif;font-size:14px;font-weight:bold;box-shadow:0 8px 32px rgba(0,229,255,0.2);border:1px solid rgba(0,229,255,0.3);z-index:9999999;transition:opacity 0.3s,transform 0.3s;pointer-events:none;transform:translateY(-10px);opacity:0;';
+      document.body.appendChild(t);
+    }
+    t.innerText = msg;
+    t.offsetHeight; // trigger reflow
+    t.style.transform = 'translateY(0)';
+    t.style.opacity = '1';
+    setTimeout(function() {
+      t.style.transform = 'translateY(-10px)';
+      t.style.opacity = '0';
+    }, 2500);
+  }
+})();`,
+            dark: `(function() {
+  var id = 'bml-dark-style';
+  var existing = document.getElementById(id);
+  if (existing) {
+    existing.remove();
+  } else {
+    var style = document.createElement('style');
+    style.id = id;
+    style.innerHTML = 'html { filter: invert(1) hue-rotate(180deg) !important; } img, video, iframe, [style*="background-image"] { filter: invert(1) hue-rotate(180deg) !important; }';
+    document.head.appendChild(style);
+  }
+})();`,
+            passwords: `(function() {
+  var inputs = document.querySelectorAll('input[type="password"]');
+  if (inputs.length === 0) {
+    alert('Nem található jelszó mező ezen az oldalon!');
+  } else {
+    for (var i = 0; i < inputs.length; i++) {
+      inputs[i].type = (inputs[i].type === 'password') ? 'text' : 'password';
+    }
+  }
+})();`,
+            outline: `(function() {
+  var elements = document.querySelectorAll('*');
+  var active = window.bml_outline_active;
+  
+  if (active) {
+    window.bml_outline_active = false;
+    for (var i = 0; i < elements.length; i++) {
+      elements[i].style.outline = '';
+    }
+  } else {
+    window.bml_outline_active = true;
+    for (var i = 0; i < elements.length; i++) {
+      var color = '#' + Math.floor(Math.random()*16777215).toString(16);
+      elements[i].style.outline = '1px solid ' + color;
+    }
+  }
+})();`
+        };
+
+        const presetLabels = {
+            edit: 'Szerkesztő Mód',
+            dark: 'Sötét Mód',
+            passwords: 'Jelszavak Mutatása',
+            outline: 'Keretek Mutatása'
+        };
+
+        const editor = document.getElementById('codeEditor');
+        const bookmarkletLink = document.getElementById('bookmarkletLink');
+        const btnLabel = document.getElementById('btnLabel');
+        const charCount = document.getElementById('charCount');
+        const localToast = document.getElementById('localToast');
+
+        // Preset betöltése
+        function loadPreset(key) {
+            // Aktív gomb stílus frissítése
+            document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Kód betöltése
+            editor.value = presets[key];
+            btnLabel.innerText = presetLabels[key];
+            updateBookmarklet();
+            showLocalToast(`${presetLabels[key]} előbeállítás betöltve!`);
+        }
+
+        // Kód minifikálása és URL kódolása
+        function updateBookmarklet() {
+            const rawCode = editor.value;
+            charCount.innerText = `Karakterek száma: ${rawCode.length}`;
+
+            // Egyszerű minifikálás (megjegyzések eltávolítása, szóközök tömörítése)
+            let minified = rawCode
+                .replace(/\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*$/gm, '$1') // Megjegyzések törlése
+                .replace(/\s+/g, ' ') // Felesleges szóközök tömörítése
+                .trim();
+
+            // Bookmarklet link létrehozása
+            const encodedCode = 'javascript:' + encodeURIComponent(minified);
+            bookmarkletLink.href = encodedCode;
+        }
+
+        // Helyi toast üzenet
+        function showLocalToast(text) {
+            localToast.innerText = text;
+            localToast.classList.add('show');
+            setTimeout(() => {
+                localToast.classList.remove('show');
+            }, 2000);
+        }
+
+        // Eseménykezelők
+        editor.addEventListener('input', () => {
+            btnLabel.innerText = 'Saját Kód';
+            document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+            updateBookmarklet();
+        });
+
+        // Letiltjuk a link alapértelmezett kattintását, ha nem húzzák, de engedjük a futtatást tesztként
+        bookmarkletLink.addEventListener('click', (e) => {
+            // Megengedjük a kattintást, így tesztelhető helyben is!
+            // De kiírunk egy figyelmeztetést, hogy húzni kell
+            showLocalToast("Kattintás észlelve! Futtatás helyben...");
+        });
+
+        // Kezdőérték betöltése
+        editor.value = presets.edit;
+        updateBookmarklet();
+    </script>
+</body>
+</html>
