@@ -1,8 +1,8 @@
 # 📺 MédiaKlikk Bookmarklet
 
-Böngésző bookmarklet, amivel a MédiaKlikk és M4 Sport élő adásait egyetlen kattintással, csatornaváltóval lehet nézni – teljes képernyőn, az oldal többi elemét elrejtve.
+Böngésző bookmarklet, amivel a MédiaKlikk élő adásait egyetlen kattintással, csatornaváltóval lehet nézni – teljes képernyőn, az oldal többi elemét elrejtve.
 
-**Támogatott csatornák:** M1 · Duna · Duna World · M4 Sport · M4 Sport+ · M5
+**Támogatott csatornák:** M1 · M2 · Duna · Duna World · M4 Sport · M4 Sport+ · M5
 
 ---
 
